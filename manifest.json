@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Gemini Mermaid Renderer",
+  "version": "1.0",
+  "description": "Adds a button to render Mermaid diagrams in Gemini code blocks.",
+  "permissions": ["activeTab"],
+  "host_permissions": [
+    "https://gemini.google.com/*"
+  ],
+  "action": {
+    "default_icon": {
+      "128": "icon.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://gemini.google.com/*"],
+      "css": ["style.css"],
+      "js": ["mermaid.min.js", "content.js"]
+    }
+  ],
+  "icons": {
+    "128": "icon.png"
+  }
+}

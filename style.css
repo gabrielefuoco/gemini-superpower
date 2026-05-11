@@ -1,0 +1,665 @@
+/* Premium styles for Gemini Mermaid Renderer */
+
+:root {
+    --mermaid-btn-bg: rgba(168, 199, 250, 0.1);
+    --mermaid-btn-hover: rgba(168, 199, 250, 0.2);
+    --mermaid-btn-text: #a8c7fa;
+    --mermaid-border: rgba(68, 71, 70, 0.5);
+    --diagram-bg: #ffffff;
+    --diagram-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Inline Header Controls */
+.mermaid-header-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 8px;
+    font-family: 'Google Sans', 'Roboto', Arial, sans-serif;
+}
+
+.mermaid-icon-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--mermaid-btn-text, #a8c7fa);
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 15px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.mermaid-icon-btn:hover {
+    background: var(--mermaid-btn-hover, rgba(168, 199, 250, 0.2));
+    border-color: rgba(168, 199, 250, 0.3);
+}
+
+.mermaid-icon-btn.active {
+    background: rgba(168, 199, 250, 0.3);
+    border-color: rgba(168, 199, 250, 0.5);
+}
+
+.mermaid-dropdown {
+    position: relative;
+}
+
+.mermaid-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    background: var(--diagram-bg, #ffffff);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    box-shadow: var(--diagram-shadow, 0 4px 24px rgba(0,0,0,0.1));
+    padding: 8px;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 10000;
+    min-width: 150px;
+}
+
+.mermaid-dropdown:hover .mermaid-dropdown-menu {
+    display: flex;
+}
+
+.mermaid-dropdown-btn {
+    background: transparent;
+    border: none;
+    text-align: left;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    color: #444;
+    font-size: 13px;
+    font-family: inherit;
+    transition: background 0.2s;
+}
+
+.mermaid-dropdown-btn:hover {
+    background: #f0f0f0;
+}
+
+.mermaid-theme-select {
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    margin-bottom: 4px;
+}
+
+/* Fullscreen control overlay */
+.mermaid-controls-fullscreen {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 1000000;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    padding: 4px 8px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Dark Theme Overrides for Controls */
+.mermaid-header-controls[data-theme="dark"] .mermaid-dropdown-menu {
+    background: #2d2d2d;
+    border-color: #444;
+}
+
+.mermaid-header-controls[data-theme="dark"] .mermaid-dropdown-btn {
+    color: #eee;
+}
+
+.mermaid-header-controls[data-theme="dark"] .mermaid-dropdown-btn:hover {
+    background: #3d3d3d;
+}
+
+.mermaid-header-controls[data-theme="dark"] .mermaid-theme-select {
+    background: #2d2d2d;
+    color: #eee;
+    border-color: #444;
+}
+
+.mermaid-controls-fullscreen[data-theme="dark"] {
+    background: rgba(30, 30, 30, 0.9);
+}
+
+/* Outer wrapper for diagram */
+.mermaid-outer-wrapper {
+    position: relative;
+    background-color: var(--diagram-bg);
+    border-radius: 16px;
+    margin: 16px 0;
+    box-shadow: var(--diagram-shadow);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    overflow: hidden; 
+}
+
+/* Container for the rendered diagram */
+.mermaid-diagram-container {
+    padding: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Hide scrollbars during pan */
+    min-height: 300px;
+    cursor: grab;
+    background: white;
+    transition: background 0.3s ease;
+}
+
+/* Dark Theme Overrides */
+.mermaid-outer-wrapper[data-theme="dark"] {
+    background-color: #1e1e1e;
+    border-color: #333;
+}
+
+.mermaid-outer-wrapper[data-theme="dark"] .mermaid-controls-header {
+    background: rgba(30, 30, 30, 0.9);
+    border-bottom-color: #333;
+}
+
+.mermaid-outer-wrapper[data-theme="dark"] .mermaid-theme-select,
+.mermaid-outer-wrapper[data-theme="dark"] .mermaid-actions button,
+.mermaid-outer-wrapper[data-theme="dark"] .mermaid-zoom-controls button {
+    background: #2d2d2d;
+    color: #eee;
+    border-color: #444;
+}
+
+.mermaid-outer-wrapper[data-theme="dark"] .mermaid-diagram-container {
+    background: #1e1e1e;
+}
+
+.mermaid-diagram-container:active {
+    cursor: grabbing;
+}
+
+/* Ensure SVG starts at a reasonable size */
+.mermaid-diagram-container svg {
+    max-width: none; /* Allow panning beyond viewport */
+    height: auto;
+    transform-origin: center center;
+    user-select: none;
+}
+
+/* Fullscreen Mode */
+.mermaid-fullscreen {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 999999;
+    margin: 0 !important;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.mermaid-fullscreen .mermaid-diagram-container {
+    flex-grow: 1;
+    height: 100%;
+}
+
+/* --- Pinboard Styles --- */
+.gemini-pinboard {
+    position: fixed;
+    background: var(--diagram-bg, #ffffff);
+    backdrop-filter: blur(12px);
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    transition: opacity 0.3s, transform 0.3s;
+    font-family: 'Google Sans', 'Roboto', Arial, sans-serif;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+}
+
+.gemini-pinboard.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+/* Floating Mode */
+.gemini-pinboard.floating {
+    top: 80px;
+    right: 24px;
+    width: 400px;
+    height: 600px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.1);
+    resize: both;
+    overflow: hidden;
+}
+
+/* Docked Sidebar Mode */
+.gemini-pinboard.docked {
+    top: 0;
+    right: 0;
+    width: 450px;
+    height: 100vh;
+    border-radius: 0;
+    border-left: 1px solid rgba(0,0,0,0.1);
+}
+
+.gemini-pinboard.docked > * {
+    direction: ltr;
+}
+
+/* Pinboard Header */
+.pinboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(240, 244, 249, 0.8);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    cursor: grab;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.pinboard-header:active {
+    cursor: grabbing;
+}
+
+.pinboard-title {
+    font-weight: 500;
+    font-size: 15px;
+    color: #444;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pinboard-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.pinboard-icon-btn {
+    background: transparent;
+    border: none;
+    color: #5f6368;
+    cursor: pointer;
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: background 0.2s;
+}
+
+.pinboard-icon-btn:hover {
+    background: rgba(0,0,0,0.05);
+    color: #202124;
+}
+
+/* Pinboard Content Area */
+.pinboard-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: #f8f9fa;
+    min-height: 0;
+}
+
+/* Pinned Item Card */
+.pinned-item {
+    flex-shrink: 0;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.05);
+    overflow: hidden;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.pinned-item-header {
+    display: flex;
+    justify-content: flex-end;
+    padding: 4px 8px;
+    background: rgba(0,0,0,0.02);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.pinned-item-body {
+    padding: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #202124;
+    overflow-x: auto;
+}
+
+.pinned-item-body svg {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Selection Pin Popup */
+#gemini-selection-popup {
+    position: absolute;
+    display: none;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    padding: 4px;
+    z-index: 1000000;
+    user-select: none;
+    gap: 4px;
+}
+
+.gemini-popup-btn {
+    background: transparent;
+    border: none;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #202124;
+    font-family: 'Google Sans', sans-serif;
+    white-space: nowrap;
+}
+
+.gemini-popup-btn:hover {
+    background: #f1f3f4;
+}
+
+.gemini-popup-btn:active {
+    background: #e8eaed;
+}
+
+/* Sidebar Toggle Tab */
+#gemini-pinboard-tab {
+    position: fixed;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    padding: 12px 8px;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.05);
+    cursor: pointer;
+    z-index: 999998;
+    display: none;
+    transition: transform 0.2s;
+}
+
+#gemini-pinboard-tab:hover {
+    transform: translateY(-50%) translateX(-4px);
+    background: #f8f9fa;
+}
+
+#gemini-pinboard-tab.visible {
+    display: block;
+}
+
+/* Dark Mode Overrides */
+html[dark] .gemini-pinboard,
+body.dark-theme .gemini-pinboard {
+    background: #1e1e1e;
+}
+
+html[dark] .pinboard-header,
+body.dark-theme .pinboard-header {
+    background: rgba(45, 45, 45, 0.9);
+    border-bottom-color: #333;
+}
+
+html[dark] .pinboard-title,
+body.dark-theme .pinboard-title {
+    color: #e8eaed;
+}
+
+html[dark] .pinboard-icon-btn,
+body.dark-theme .pinboard-icon-btn {
+    color: #9aa0a6;
+}
+
+html[dark] .pinboard-icon-btn:hover,
+body.dark-theme .pinboard-icon-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #e8eaed;
+}
+
+html[dark] .pinboard-content,
+body.dark-theme .pinboard-content {
+    background: #121212;
+}
+
+html[dark] .pinned-item,
+body.dark-theme .pinned-item {
+    background: #202124;
+    border-color: #333;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+html[dark] .pinned-item-header,
+body.dark-theme .pinned-item-header {
+    background: rgba(255,255,255,0.05);
+    border-bottom-color: #333;
+}
+
+html[dark] .pinned-item-body,
+body.dark-theme .pinned-item-body {
+    color: #e8eaed;
+}
+
+html[dark] #gemini-selection-popup,
+body.dark-theme #gemini-selection-popup,
+html[dark] #gemini-pinboard-tab,
+body.dark-theme #gemini-pinboard-tab {
+    background: #202124;
+    border-color: #333;
+    color: #e8eaed;
+}
+
+html[dark] .gemini-popup-btn,
+body.dark-theme .gemini-popup-btn {
+    color: #e8eaed;
+}
+
+html[dark] .gemini-popup-btn:hover,
+body.dark-theme .gemini-popup-btn:hover {
+    background: #2d2d2d;
+}
+
+html[dark] #gemini-pinboard-tab:hover,
+body.dark-theme #gemini-pinboard-tab:hover {
+    background: #2d2d2d;
+}
+
+/* Wide Gemini Mode */
+body.gemini-wide-mode .conversation-container,
+body.gemini-wide-mode .bottom-container,
+body.gemini-wide-mode .input-area-container:not(.is-zero-state), 
+body.gemini-wide-mode form,
+body.gemini-wide-mode user-query {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+/* Custom Resizer Divider */
+#gemini-pinboard-resizer {
+    position: absolute;
+    left: -4px;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    z-index: 1000;
+    transition: background 0.2s;
+    user-select: none;
+}
+
+#gemini-pinboard-resizer:hover,
+#gemini-pinboard-resizer.active {
+    background: rgba(66, 133, 244, 0.4);
+    border-left: 1px solid rgba(66, 133, 244, 0.8);
+}
+
+/* Docked Sides */
+.gemini-pinboard.docked-right {
+    top: 0;
+    right: 0;
+    width: 450px;
+    height: 100vh;
+    border-radius: 0;
+    border-left: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Floating Controls (Integrated in Chat) */
+#gemini-chat-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 8px;
+    padding-left: 12px;
+    border-right: 1px solid rgba(0,0,0,0.1);
+}
+
+body.dark-mode #gemini-chat-controls {
+    border-right-color: rgba(255,255,255,0.1);
+}
+
+.chat-control-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: background 0.2s;
+    color: inherit;
+    opacity: 0.7;
+}
+
+.chat-control-btn:hover {
+    background: rgba(0,0,0,0.05);
+    opacity: 1;
+}
+
+body.dark-mode .chat-control-btn:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* Widescreen mode improvements */
+body.gemini-wide-mode .conversation-container,
+body.gemini-wide-mode .bottom-container,
+body.gemini-wide-mode .input-area-container,
+body.gemini-wide-mode .chat-scroll-container,
+body.gemini-wide-mode infinite-scroller,
+body.gemini-wide-mode .user-query,
+body.gemini-wide-mode .model-response {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+/* Chat controls integration */
+#gemini-chat-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 8px 4px 12px;
+    padding-right: 10px;
+    border-right: 1px solid rgba(26, 115, 232, 0.15);
+    z-index: 10;
+}
+
+.chat-control-btn, .pin-header-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: #e8f0fe;
+    color: #1a73e8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.9;
+}
+
+.chat-control-btn svg, .pin-header-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: #1a73e8;
+}
+
+.chat-control-btn:hover, .pin-header-btn:hover {
+    background: #d2e3fc;
+    color: #174ea6;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(26, 115, 232, 0.2);
+    opacity: 1;
+}
+
+.chat-control-btn:active, .pin-header-btn:active {
+    transform: translateY(0);
+    background: #aecbfa;
+}
+
+body.dark-mode .chat-control-btn, body.dark-mode .pin-header-btn {
+    background: rgba(26, 115, 232, 0.15);
+    color: #8ab4f8;
+}
+
+body.dark-mode .chat-control-btn svg, body.dark-mode .pin-header-btn svg {
+    stroke: #8ab4f8;
+}
+
+body.dark-mode .chat-control-btn:hover, body.dark-mode .pin-header-btn:hover {
+    background: rgba(26, 115, 232, 0.25);
+    color: #d2e3fc;
+}
+
+/* Ensure centering when docked right */
+body:not(.gemini-wide-mode) .conversation-container,
+body:not(.gemini-wide-mode) .bottom-container,
+body:not(.gemini-wide-mode) .input-area-container {
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+/* Gemini Layout Shifting Transition */
+main {
+    transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.resizing-pinboard {
+    user-select: none !important;
+    cursor: col-resize !important;
+}
