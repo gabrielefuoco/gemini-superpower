@@ -497,15 +497,7 @@ body.dark-theme #gemini-pinboard-tab:hover {
     background: #2d2d2d;
 }
 
-/* Wide Gemini Mode */
-body.gemini-wide-mode .conversation-container,
-body.gemini-wide-mode .bottom-container,
-body.gemini-wide-mode .input-area-container:not(.is-zero-state), 
-body.gemini-wide-mode form,
-body.gemini-wide-mode user-query {
-    max-width: 100% !important;
-    width: 100% !important;
-}
+/* Wide Mode consolidated below */
 
 /* Custom Resizer Divider */
 #gemini-pinboard-resizer {
@@ -575,17 +567,7 @@ body.dark-mode .chat-control-btn:hover {
     background: rgba(255,255,255,0.1);
 }
 
-/* Widescreen mode improvements */
-body.gemini-wide-mode .conversation-container,
-body.gemini-wide-mode .bottom-container,
-body.gemini-wide-mode .input-area-container,
-body.gemini-wide-mode .chat-scroll-container,
-body.gemini-wide-mode infinite-scroller,
-body.gemini-wide-mode .user-query,
-body.gemini-wide-mode .model-response {
-    max-width: 100% !important;
-    width: 100% !important;
-}
+/* Wide Mode consolidated below */
 
 /* Chat controls integration */
 #gemini-chat-controls {
@@ -646,17 +628,31 @@ body.dark-mode .chat-control-btn:hover, body.dark-mode .pin-header-btn:hover {
     color: #d2e3fc;
 }
 
-/* Ensure centering when docked right */
-body:not(.gemini-wide-mode) .conversation-container,
-body:not(.gemini-wide-mode) .bottom-container,
-body:not(.gemini-wide-mode) .input-area-container {
-    margin-left: auto !important;
-    margin-right: auto !important;
+/* --- Miglioramenti Widescreen --- */
+body.gemini-wide-mode main {
+    max-width: none !important;
 }
 
-/* Gemini Layout Shifting Transition */
-main {
-    transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+body.gemini-wide-mode .conversation-container,
+body.gemini-wide-mode .bottom-container,
+body.gemini-wide-mode .input-area-container,
+body.gemini-wide-mode .chat-scroll-container {
+    max-width: 95% !important; /* Lascia un piccolo margine laterale per respirare */
+    width: 100% !important;
+    transition: max-width 0.3s ease;
+}
+
+/* Lasciamo che le bolle si dimensionino in base al contenuto, permettendo loro solo di espandersi di più */
+body.gemini-wide-mode .user-query,
+body.gemini-wide-mode .model-response,
+body.gemini-wide-mode message-content {
+    max-width: 100% !important; 
+    width: auto !important; /* CRITICO: impedisce alla bolla del testo di deformarsi orrendamente */
+}
+
+/* Animazione fluida della transizione layout */
+main, .chat-scroll-container, .conversation-container, infinite-scroller {
+    transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 body.resizing-pinboard {

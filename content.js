@@ -33,7 +33,8 @@ async function exportImage(svgElement, action = 'download') {
     if (!svgElement) return;
     let svgData = new XMLSerializer().serializeToString(svgElement);
     if (!svgData.includes('xmlns="http://www.w3.org/2000/svg"')) {
-        svgData = svgData.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+        // Usa regex per intercettare <svg seguito da qualsiasi cosa (spazio o >)
+        svgData = svgData.replace(/<svg([^>]*>)/, '<svg xmlns="http://www.w3.org/2000/svg"$1');
     }
 
     const svgSize = svgElement.getBoundingClientRect();
@@ -332,10 +333,10 @@ function injectMermaidButtons() {
                 e.preventDefault();
                 isFullscreen = !isFullscreen;
                 if (isFullscreen) {
-                    outerContainer._originalParent = outerContainer.parentNode;
-                    outerContainer._originalNextSibling = outerContainer.nextSibling;
-                    controlsGroup._originalParent = controlsGroup.parentNode;
-                    controlsGroup._originalNextSibling = controlsGroup.nextSibling;
+                    // Crea un segnaposto invisibile dove si trova attualmente il container
+                    outerContainer._placeholder = document.createElement('div');
+                    outerContainer._placeholder.style.display = 'none';
+                    outerContainer.parentNode.insertBefore(outerContainer._placeholder, outerContainer);
 
                     document.body.appendChild(outerContainer);
                     controlsGroup.classList.add('mermaid-controls-fullscreen');
@@ -345,11 +346,19 @@ function injectMermaidButtons() {
                     btnFullscreen.textContent = '⛶ Esci';
                     document.body.style.overflow = 'hidden';
                 } else {
-                    if (outerContainer._originalParent) {
-                        outerContainer._originalParent.insertBefore(outerContainer, outerContainer._originalNextSibling);
+                    // Reinserisci il container esattamente dove si trova il segnaposto
+                    if (outerContainer._placeholder && outerContainer._placeholder.parentNode) {
+                        outerContainer._placeholder.parentNode.replaceChild(outerContainer, outerContainer._placeholder);
+                        outerContainer._placeholder = null;
                     }
+                    
                     if (controlsGroup._originalParent) {
-                        controlsGroup._originalParent.insertBefore(controlsGroup, controlsGroup._originalNextSibling);
+                        // Ripristina i controlli nel loro posto originale (pre-header)
+                        // È meglio usare un target noto piuttosto che l'originalParent se questo cambia
+                        const header = pre.previousElementSibling;
+                        if(header) {
+                            header.appendChild(controlsGroup); // fallback sicuro
+                        }
                     }
                     controlsGroup.classList.remove('mermaid-controls-fullscreen');
                     outerContainer.classList.remove('mermaid-fullscreen');
@@ -456,13 +465,37 @@ function autoRenderLastMessage() {
     });
 }
 
-setInterval(() => {
-    injectMermaidButtons();
-    autoRenderLastMessage();
-}, 2000);
-
+// Esegui la prima volta
 injectMermaidButtons();
 setTimeout(autoRenderLastMessage, 500);
+
+// Observer per il contenuto: si attiva solo quando Gemini aggiunge nuovi nodi (es. nuovi messaggi)
+const contentObserver = new MutationObserver((mutations) => {
+    let shouldRun = false;
+    for (const mutation of mutations) {
+        if (mutation.addedNodes.length > 0) {
+            shouldRun = true;
+            break;
+        }
+    }
+    
+    // Se ci sono stati cambiamenti, avvia l'elaborazione usando un timeout 
+    // per raggruppare le chiamate ravvicinate (Debouncing)
+    if (shouldRun) {
+        clearTimeout(contentObserver._timer);
+        contentObserver._timer = setTimeout(() => {
+            injectMermaidButtons();
+            autoRenderLastMessage();
+        }, 500); // Aspetta mezzo secondo dalla fine dell'animazione
+    }
+});
+
+// Osserva il contenitore principale per le aggiunte
+const observeChat = () => {
+    const mainContainer = document.querySelector('main') || document.body;
+    contentObserver.observe(mainContainer, { childList: true, subtree: true });
+};
+observeChat();
 
 // --- Pinboard Implementation ---
 (() => {
@@ -568,7 +601,6 @@ setTimeout(autoRenderLastMessage, 500);
 
     // State & Persistence
     let isDocked = localStorage.getItem('gemini-pin-docked') === 'true';
-    let dockSide = 'right'; // Always right
     let isWide = localStorage.getItem('gemini-pin-wide') === 'true';
     let itemCount = 0;
 
@@ -662,6 +694,7 @@ setTimeout(autoRenderLastMessage, 500);
     }
     
     const updateLayout = () => {
+        // Cerca tutti i contenitori principali di Gemini
         const containers = [
             document.querySelector('main'),
             document.querySelector('.chat-scroll-container'),
@@ -673,6 +706,7 @@ setTimeout(autoRenderLastMessage, 500);
 
         document.body.classList.remove('pin-docked-left');
 
+        // Gestione WIDE
         if (isWide) {
             document.body.classList.add('gemini-wide-mode');
             btnWide.style.filter = 'grayscale(0)';
@@ -681,27 +715,52 @@ setTimeout(autoRenderLastMessage, 500);
             btnWide.style.filter = 'grayscale(1)';
         }
 
-        if (isDocked && pinboard.classList.contains('visible')) {
+        const isVisible = pinboard.classList.contains('visible');
+
+        // Gestione DOCK e MARGINI
+        if (isDocked && isVisible) {
+            // È agganciata E visibile: applica i margini per fare spazio
             const width = pinboard.style.width || '450px';
             pinboard.style.width = width;
-            
             pinboard.className = 'gemini-pinboard visible docked-right';
-            pinboard.style.left = '';
             
-            const main = document.querySelector('main');
-            if (main) {
-                main.style.setProperty('margin-right', width, 'important');
-                main.style.removeProperty('margin-left');
-            }
+            // RESET CRITICO POSIZIONAMENTO (Evita che rimanga a sinistra se trascinata)
+            pinboard.style.left = '';
+            pinboard.style.right = '';
+            pinboard.style.top = '';
+            
+            containers.forEach(el => {
+                el.style.setProperty('margin-right', width, 'important');
+                el.style.removeProperty('margin-left');
+            });
             btnDock.textContent = '◩';
-        } else if (!isDocked) {
-            pinboard.className = pinboard.classList.contains('visible') ? 'gemini-pinboard visible floating' : 'gemini-pinboard floating';
-            btnDock.textContent = '◨';
-            const main = document.querySelector('main');
-            if (main) {
-                main.style.removeProperty('margin-right');
-                main.style.removeProperty('margin-left');
+            
+        } else {
+            // È chiusa OPPURE è floating: in entrambi i casi la chat deve tornare a tutto schermo
+            if (!isDocked) {
+                pinboard.className = isVisible ? 'gemini-pinboard visible floating' : 'gemini-pinboard floating';
+                
+                // Se non è visibile, resettiamo anche la posizione per la prossima volta
+                if (!isVisible) {
+                    pinboard.style.left = '';
+                    pinboard.style.right = '';
+                    pinboard.style.top = '';
+                }
+            } else {
+                pinboard.className = 'gemini-pinboard docked-right'; 
+                // Reset posizionamento anche se nascosta ma docked
+                pinboard.style.left = '';
+                pinboard.style.right = '';
+                pinboard.style.top = '';
             }
+            
+            // PULIZIA MARGINI CRITICA
+            containers.forEach(el => {
+                el.style.removeProperty('margin-right');
+                el.style.removeProperty('margin-left');
+            });
+            
+            btnDock.textContent = isDocked ? '◩' : '◨';
         }
         
         localStorage.setItem('gemini-pin-docked', isDocked);
@@ -895,24 +954,29 @@ setTimeout(autoRenderLastMessage, 500);
                     const editable = chatInput.querySelector('[contenteditable="true"]') || chatInput;
                     editable.focus();
                     
-                    // Put cursor at end
-                    const sel = window.getSelection();
-                    sel.selectAllChildren(editable);
-                    sel.collapseToEnd();
-                    
                     const quote = `"${textToQuote}"\n`;
+                    
+                    // Prova prima con execCommand
                     const success = document.execCommand('insertText', false, quote);
                     
+                    // Fallback ROBUSTO: Simulazione di un evento Paste
                     if (!success) {
-                        // Fallback if execCommand fails
+                        const pasteEvent = new ClipboardEvent('paste', {
+                            bubbles: true,
+                            cancelable: true,
+                            clipboardData: new DataTransfer()
+                        });
+                        pasteEvent.clipboardData.setData('text/plain', quote);
+                        editable.dispatchEvent(pasteEvent);
+                        
+                        // Ultima spiaggia per input/textarea standard
                         if (editable.tagName === 'TEXTAREA' || editable.tagName === 'INPUT') {
-                            editable.value += quote;
-                        } else {
-                            const p = document.createElement('p');
-                            p.innerText = quote;
-                            editable.appendChild(p);
+                            const start = editable.selectionStart;
+                            const end = editable.selectionEnd;
+                            editable.value = editable.value.substring(0, start) + quote + editable.value.substring(end);
+                            editable.selectionStart = editable.selectionEnd = start + quote.length;
+                            editable.dispatchEvent(new Event('input', { bubbles: true }));
                         }
-                        editable.dispatchEvent(new Event('input', { bubbles: true }));
                     }
                 } else {
                     const ta = document.querySelector('textarea');
