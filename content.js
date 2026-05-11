@@ -28,6 +28,26 @@ function isMermaidCode(text) {
     return keywords.some(k => trimmed.startsWith(k));
 }
 
+function isAnkiCode(text) {
+    if (!text) return false;
+    const cleanText = text.replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '').trim();
+    const lines = cleanText.split('\n').filter(l => l.trim().length > 0);
+    if (lines.length === 0) return false;
+    
+    const hasTabs = lines.some(l => l.includes('\t') || l.includes('\u0009'));
+    const hasSpacesAsTabs = lines.some(l => l.split(/\s{3,}/).length >= 2);
+    
+    if (hasTabs) {
+        const tabbedLines = lines.filter(l => l.includes('\t') || l.includes('\u0009'));
+        if (tabbedLines.length >= lines.length * 0.3) return true;
+    }
+    if (hasSpacesAsTabs) {
+        const spaceTabbedLines = lines.filter(l => l.split(/\s{3,}/).length >= 2);
+        if (spaceTabbedLines.length >= lines.length * 0.5) return true;
+    }
+    return false;
+}
+
 // Function to convert SVG to PNG and download or copy
 async function exportImage(svgElement, action = 'download') {
     if (!svgElement) return;
@@ -105,8 +125,11 @@ function injectMermaidButtons() {
         const text = pre.textContent.trim();
         const hasMermaidClass = pre.classList.contains('language-mermaid') || pre.querySelector('code.language-mermaid');
         const looksLikeMermaid = isMermaidCode(text);
+        const looksLikeAnki = isAnkiCode(text);
+        const isActuallyMermaid = hasMermaidClass || looksLikeMermaid;
+        const isActuallyAnki = looksLikeAnki;
 
-        if (hasMermaidClass || looksLikeMermaid) {
+        if (isActuallyMermaid || isActuallyAnki) {
             pre.dataset.mermaidExtensionProcessed = "true";
             
             const controlsGroup = document.createElement('div');
@@ -178,7 +201,22 @@ function injectMermaidButtons() {
             btnSave.className = 'mermaid-settings-btn';
             btnSave.textContent = '💾 Salva Immagine';
 
-            dropdownMenu.append(themeSelect, btnSmooth, btnCopy, btnSave);
+            // Anki Export
+            const btnAnki = document.createElement('button');
+            btnAnki.className = 'mermaid-settings-btn anki-export-btn';
+            btnAnki.textContent = '🧠 Esporta Anki';
+            if (isActuallyAnki) {
+                btnAnki.classList.add('highlight');
+            }
+
+            dropdownMenu.append(themeSelect, btnSmooth, btnCopy, btnSave, btnAnki);
+            if (!isActuallyMermaid) {
+                // Remove diagram-only options
+                themeSelect.style.display = 'none';
+                btnSmooth.style.display = 'none';
+                btnCopy.style.display = 'none';
+                btnSave.style.display = 'none';
+            }
             const btnPinDiagram = document.createElement('button');
             btnPinDiagram.className = 'mermaid-settings-btn';
             btnPinDiagram.textContent = '📌';
@@ -187,6 +225,28 @@ function injectMermaidButtons() {
             dropdownContainer.append(btnSettings, dropdownMenu);
 
             controlsGroup.append(btnToggle, btnZoomOut, btnReset, btnZoomIn, btnPinDiagram, btnFullscreen, dropdownContainer);
+
+            if (!isActuallyMermaid) {
+                // Se è solo Anki, nascondi tutto il resto e metti il bottone DIRETTO nell'header
+                btnToggle.style.display = 'none';
+                btnZoomOut.style.display = 'none';
+                btnReset.style.display = 'none';
+                btnZoomIn.style.display = 'none';
+                btnFullscreen.style.display = 'none';
+                btnPinDiagram.style.display = 'none';
+                dropdownContainer.style.display = 'none';
+
+                const btnAnkiDirect = document.createElement('button');
+                btnAnkiDirect.className = 'mermaid-icon-btn highlight anki-export-btn';
+                btnAnkiDirect.style.padding = '4px 12px';
+                btnAnkiDirect.style.fontSize = '13px';
+                btnAnkiDirect.textContent = '🧠 Esporta Anki';
+                btnAnkiDirect.onclick = (e) => {
+                    e.preventDefault();
+                    btnAnki.click(); // Usa lo stesso handler già definito
+                };
+                controlsGroup.appendChild(btnAnkiDirect);
+            }
 
             const outerContainer = document.createElement('div');
             outerContainer.className = 'mermaid-outer-wrapper';
@@ -209,7 +269,9 @@ function injectMermaidButtons() {
             outerContainer.append(diagramContainer);
 
             // Hide diagram controls initially
-            controlsGroup.querySelectorAll('.mermaid-diagram-control').forEach(el => el.style.display = 'none');
+            controlsGroup.querySelectorAll('.mermaid-diagram-control').forEach(el => {
+                el.style.display = 'none';
+            });
 
             // Inject controls into Gemini's header
             const header = pre.previousElementSibling;
@@ -326,6 +388,70 @@ function injectMermaidButtons() {
                     btnSave.textContent = '❌ Errore';
                 }
                 setTimeout(() => btnSave.textContent = oldText, 2000);
+            };
+
+            btnAnki.onclick = async () => {
+                const oldText = btnAnki.textContent;
+                btnAnki.textContent = '⏳...';
+                try {
+                    console.log("[Mermaid-Extension] Starting Anki export...");
+                    const ankiText = pre.textContent.trim();
+                    
+                    let css = "";
+                    try {
+                        const cssResponse = await fetch(chrome.runtime.getURL('anki_export/anki_styles.css'));
+                        if (cssResponse.ok) {
+                            css = await cssResponse.text();
+                        }
+                    } catch (e) {
+                        console.warn("[Mermaid-Extension] CSS fetch failed, proceeding without custom styles:", e);
+                    }
+                    
+                    if (typeof AnkiExporter === 'undefined') {
+                        throw new Error("AnkiExporter library not loaded. Check manifest.json");
+                    }
+
+                    const exporter = new AnkiExporter("Gemini Deck", css);
+                    
+                    const renderFn = async (code) => {
+                        console.log("[Mermaid-Extension] Rendering Mermaid for Anki...");
+                        const id = `mermaid-anki-${Date.now()}`;
+                        const { svg } = await mermaid.render(id, code);
+                        return new Promise((resolve) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                const canvas = document.createElement('canvas');
+                                canvas.width = img.width;
+                                canvas.height = img.height;
+                                const ctx = canvas.getContext('2d');
+                                ctx.fillStyle = 'white';
+                                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                ctx.drawImage(img, 0, 0);
+                                canvas.toBlob(blob => {
+                                    resolve({ blob, fileName: `mermaid_${Math.random().toString(36).substr(2, 9)}.png` });
+                                }, 'image/png');
+                            };
+                            img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+                        });
+                    };
+
+                    await exporter.parseText(ankiText, renderFn);
+                    const blob = await exporter.generateApkg();
+                    
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Gemini_Anki_${Date.now()}.apkg`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    
+                    btnAnki.textContent = '✅ Scaricato!';
+                    console.log("[Mermaid-Extension] Anki export successful.");
+                } catch (e) {
+                    console.error("[Mermaid-Extension] Anki Export Error:", e);
+                    btnAnki.textContent = '❌ Errore';
+                }
+                setTimeout(() => btnAnki.textContent = oldText, 2000);
             };
 
             let isFullscreen = false;
@@ -457,7 +583,8 @@ function autoRenderLastMessage() {
             // Stable for 1 interval (2 seconds)
             if (pre.dataset.stableCount >= 1) {
                 pre.dataset.autoRendered = "true";
-                if (!pre._mermaidIsVisible) {
+                // Solo se il pulsante è visibile (non è un blocco solo Anki)
+                if (!pre._mermaidIsVisible && btnToggle && btnToggle.style.display !== 'none') {
                     btnToggle.click();
                 }
             }

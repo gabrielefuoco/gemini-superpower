@@ -16,7 +16,13 @@
     {
       "matches": ["https://gemini.google.com/*"],
       "css": ["style.css"],
-      "js": ["mermaid.min.js", "content.js"]
+      "js": ["lib/jszip.min.js", "lib/sql-wasm.js", "mermaid.min.js", "anki-exporter.js", "content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["lib/sql-wasm.wasm", "anki_export/anki_styles.css"],
+      "matches": ["https://gemini.google.com/*"]
     }
   ],
   "icons": {

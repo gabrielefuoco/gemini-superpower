@@ -131,6 +131,25 @@
     background: rgba(30, 30, 30, 0.9);
 }
 
+.anki-export-btn {
+    transition: all 0.3s ease;
+}
+
+.anki-export-btn.highlight {
+    color: #0071e3 !important;
+    font-weight: 700 !important;
+    background: rgba(0, 113, 227, 0.05);
+}
+
+.anki-export-btn.highlight:hover {
+    background: rgba(0, 113, 227, 0.15) !important;
+}
+
+[data-theme="dark"] .anki-export-btn.highlight {
+    color: #0a84ff !important;
+    background: rgba(10, 132, 255, 0.1);
+}
+
 /* Outer wrapper for diagram */
 .mermaid-outer-wrapper {
     position: relative;
